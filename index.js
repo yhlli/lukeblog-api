@@ -4,8 +4,14 @@ const app = express();
 const cors = require('cors');
 const mongoose = require('mongoose');
 const User = require('./models/User')
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-app.use(cors());
+const salt = bcrypt.genSaltSync(10);
+
+//http://localhost:3000
+//https://lukeblog-api.onrender.com
+app.use(cors({credentials:true,origin:'https://lukeblog-api.onrender.com'}));
 app.use(express.json());
 
 try {
@@ -14,18 +20,38 @@ try {
 } catch (error) {
     console.log(error);
 }
-mongoose.connect('mongodb+srv://yihengli1998:mrlulu98@cluster0.rr9fu4y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0');
 
 app.post('/register', async (req,res)=>{
     const {username,password} = req.body;
     try {
         const userDoc = await User.create({
             username,
-            password
+            password:bcrypt.hashSync(password,salt)
         });
         res.json(userDoc);
     } catch (e) {
+        console.log(e);
         res.status(400).json(e);
+    }
+})
+
+app.post('/login', async (req,res)=>{
+    const {username,password} = req.body;
+    const userDoc = await User.findOne({username});
+    var passOk = false;
+    if (userDoc !== null){
+        passOk = bcrypt.compareSync(password, userDoc.password);
+    }
+    
+    if (passOk){
+        //Logged in
+        jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {}, (err,token) =>{
+            if (err) throw err;
+            res.cookie('token', token).json('ok');
+        });
+        //res.json();
+    } else{
+        res.status(400).json('Wrong credentials');
     }
 })
 
