@@ -10,8 +10,8 @@ const jwt = require('jsonwebtoken');
 const salt = bcrypt.genSaltSync(10);
 
 //http://localhost:3000
-//https://lukeblog-api.onrender.com
-app.use(cors({credentials:true,origin:'https://lukeblog-api.onrender.com'}));
+//https://lukeblog.onrender.com
+app.use(cors({credentials:true,origin:'https://lukeblog.onrender.com'}));
 app.use(express.json());
 
 try {
