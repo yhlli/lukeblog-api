@@ -6,13 +6,14 @@ const mongoose = require('mongoose');
 const User = require('./models/User')
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
+const cookieParser = require('cookie-parser');
 const salt = bcrypt.genSaltSync(10);
 
 //http://localhost:3000
 //https://lukeblog.onrender.com
 app.use(cors({credentials:true,origin:'https://lukeblog.onrender.com'}));
 app.use(express.json());
+app.use(cookieParser());
 
 try {
     mongoose.connect(process.env.DATABASE_URI);
@@ -53,6 +54,18 @@ app.post('/login', async (req,res)=>{
     } else{
         res.status(400).json('Wrong credentials');
     }
+})
+
+app.get('/profile', (req,res)=>{
+    const {token} = req.cookies;
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, (err,info)=>{
+        if(err) throw err;
+        res.json(info);
+    });
+});
+
+app.post('/logout', (req,res)=>{
+    res.cookie('token', '').json('ok');
 })
 
 app.listen(4000);
