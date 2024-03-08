@@ -54,6 +54,7 @@ app.post('/login', async (req,res)=>{
             }).json('ok');
         });
         //res.json();
+        console.log(res.cookies);
     } else{
         res.status(400).json('Wrong credentials');
     }
