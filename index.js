@@ -51,7 +51,10 @@ app.post('/login', async (req,res)=>{
                 httpOnly: false,
                 secure: true,
                 sameSite: 'none',
-            }).json('ok');
+            }).json({
+                id:userDoc._id,
+                username,
+            });
         });
         //res.json();
         console.log(res.cookies);
