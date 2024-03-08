@@ -61,6 +61,7 @@ app.post('/login', async (req,res)=>{
 
 app.get('/profile', (req,res)=>{
     const {token} = req.cookies;
+    console.log(token);
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, (err,info)=>{
         if(err) throw err;
         res.json(info);
