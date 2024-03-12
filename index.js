@@ -3,11 +3,15 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const mongoose = require('mongoose');
-const User = require('./models/User')
+const User = require('./models/User');
+const Post = require('./models/Post');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const salt = bcrypt.genSaltSync(10);
+const multer = require('multer');
+const uploadMiddleware = multer({ dest: 'uploads/' });
+const fs = require('fs');
 
 //http://localhost:3000
 //https://lukeblog.onrender.com
@@ -61,7 +65,7 @@ app.post('/login', async (req,res)=>{
     } else{
         res.status(400).json('Wrong credentials');
     }
-})
+});
 
 app.get('/profile', (req,res)=>{
     const {token} = req.cookies;
@@ -74,6 +78,23 @@ app.get('/profile', (req,res)=>{
 
 app.post('/logout', (req,res)=>{
     res.cookie('token', '').json('ok');
-})
+});
+
+app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
+    const {originalname,path} = req.file;
+    const parts = originalname.split('.');
+    const ext = parts[parts.length - 1];
+    const newPath = path+'.'+ext;
+    fs.renameSync(path, newPath);
+    const {title,summary,content} = req.body;
+    const postDoc = await Post.create({
+        title,
+        summary,
+        content,
+        cover:newPath,
+    });
+
+    res.json(postDoc);
+});
 
 app.listen(4000);
