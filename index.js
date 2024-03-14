@@ -53,7 +53,7 @@ app.post('/login', async (req,res)=>{
     }
     if (passOk){
         //Logged in
-        jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {}, (err,token) =>{
+        /* jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '15m'}, (err,token) =>{
             if (err) throw err;
             res.cookie('token', token, {
                 httpOnly: false,
@@ -63,9 +63,22 @@ app.post('/login', async (req,res)=>{
                 id:userDoc._id,
                 username,
             });
-        });
-        //res.json();
-        console.log(res.cookies);
+        }); */
+        const accessToken = jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '15m'});
+        try {
+            res.cookie('jwt', accessToken, {
+                httpOnly: false,
+                secure: true,
+                sameSite: 'none',
+            }).json({
+                id:userDoc._id,
+                username,
+            });
+            console.log(res.cookies);
+        } catch (error) {
+            throw error;
+        }
+        
     } else{
         res.status(400).json('Wrong credentials');
     }
@@ -112,6 +125,12 @@ app.get('/post', async (req,res)=>{
             .sort({createdAt: -1})
             .limit(20)
     );
+});
+
+app.get('/post/:id', async(req,res)=>{
+    const {id} = req.params;
+    const postDoc = await Post.findById(id).populate('author', ['username']);
+    res.json(postDoc);
 });
 
 app.listen(4000);
