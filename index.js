@@ -64,7 +64,7 @@ app.post('/login', async (req,res)=>{
                 username,
             });
         }); */
-        const accessToken = jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '15m'});
+        const accessToken = jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {});
         try {
             res.cookie('jwt', accessToken, {
                 httpOnly: false,
@@ -74,7 +74,6 @@ app.post('/login', async (req,res)=>{
                 id:userDoc._id,
                 username,
             });
-            console.log(res.cookies);
         } catch (error) {
             throw error;
         }
