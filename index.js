@@ -44,6 +44,8 @@ app.post('/register', async (req,res)=>{
     }
 })
 
+
+
 app.post('/login', async (req,res)=>{
     const {username,password} = req.body;
     const userDoc = await User.findOne({username});
@@ -53,18 +55,14 @@ app.post('/login', async (req,res)=>{
     }
     if (passOk){
         //Logged in
-        /* jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '15m'}, (err,token) =>{
+        jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {}, (err,token) => {
             if (err) throw err;
-            res.cookie('token', token, {
-                httpOnly: false,
-                secure: true,
-                sameSite: 'none',
-            }).json({
-                id:userDoc._id,
-                username,
+            res.cookie('token', token).json({
+              id:userDoc._id,
+              username,
             });
-        }); */
-        const accessToken = jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {});
+          });
+        /* const accessToken = jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {});
         try {
             res.cookie('jwt', accessToken, {
                 httpOnly: false,
@@ -76,7 +74,7 @@ app.post('/login', async (req,res)=>{
             });
         } catch (error) {
             throw error;
-        }
+        } */
         
     } else{
         res.status(400).json('Wrong credentials');
