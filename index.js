@@ -94,11 +94,25 @@ app.post('/logout', (req,res)=>{
 });
 
 app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
-    const {originalname,path} = req.file;
-    const parts = originalname.split('.');
-    const ext = parts[parts.length - 1];
+    //const {originalname,path} = req.file;
+    var path;
+    var originalname;
+    var parts;
+    var ext;
+    if (req.file !== undefined){
+        path = req.file.path;
+        originalname = req.file.originalname;
+        parts = originalname.split('.');
+        ext = parts[parts.length - 1];
+    } else{
+        path = 'uploads\\default';
+        ext = 'jpg';
+    }
+    //const parts = originalname.split('.');
+    //const ext = parts[parts.length - 1];
     const newPath = path+'.'+ext;
-    fs.renameSync(path, newPath);
+    if (req.file !== undefined) fs.renameSync(path, newPath);
+
 
     const {token} = req.cookies;
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, async (err,info)=>{
@@ -112,6 +126,7 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
                 author:info.id,
             });
         res.json(postDoc);
+        //res.json({files:req.file})
     });
 });
 
@@ -155,7 +170,14 @@ app.get('/post', async (req,res)=>{
 app.get('/post/:id', async(req,res)=>{
     const {id} = req.params;
     const postDoc = await Post.findById(id).populate('author', ['username']);
+    if (!fs.existsSync(postDoc.cover)) postDoc.cover = 'uploads\\default.jpg';
     res.json(postDoc);
 });
+
+app.delete('/post/:id', async(req,res)=>{
+    const {id} = req.params;
+    await Post.deleteOne(Post.findById(id));
+    res.json('ok');
+})
 
 app.listen(4000);
