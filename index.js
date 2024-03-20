@@ -5,6 +5,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const User = require('./models/User');
 const Post = require('./models/Post');
+const Comment = require('./models/Comment');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
@@ -178,6 +179,27 @@ app.delete('/post/:id', async(req,res)=>{
     const {id} = req.params;
     await Post.deleteOne(Post.findById(id));
     res.json('ok');
+})
+
+app.post('/comment/:id', uploadMiddleware.single('file'), async(req,res)=>{
+    const {id} = req.params;
+    const {comment} = req.body;
+    const {token} = req.cookies;
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, async (err,info)=>{
+        if(err) throw err;
+        const commentDoc = await Comment.create({
+            postId: id,
+            content: comment,
+            author: info.id,
+        })
+        res.json(commentDoc);
+    });
+});
+
+app.get('/comment/:id', async(req,res)=>{
+    const {id} = req.params;
+    const commentDoc = await Comment.find({postId: id}).populate('author', ['username']);
+    res.json(commentDoc);
 })
 
 app.listen(4000);
