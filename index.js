@@ -84,10 +84,16 @@ app.post('/login', async (req,res)=>{
 
 app.get('/profile', (req,res)=>{
     const {token} = req.cookies;
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, (err,info)=>{
-        if(err) throw err;
-        res.json(info);
-    });
+    if (token === ''){
+        res.status(400);
+        res.json('not logged in');
+    } else{
+        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, (err,info)=>{
+            if(err) throw err;
+            res.json(info);
+        });
+    }
+    
 });
 
 app.post('/logout', (req,res)=>{
@@ -206,6 +212,12 @@ app.get('/comment/:id', async(req,res)=>{
     const {id} = req.params;
     const commentDoc = await Comment.find({postId: id}).populate('author', ['username']);
     res.json(commentDoc);
+})
+
+app.delete('/comment/:id', async(req,res)=>{
+    const {id} = req.params;
+    await Comment.deleteOne(Comment.findById(id));
+    res.json('ok');
 })
 
 app.listen(4000);
