@@ -85,7 +85,6 @@ app.post('/login', async (req,res)=>{
 app.get('/profile', (req,res)=>{
     const {token} = req.cookies;
     if (token === ''){
-        res.status(400);
         res.json('not logged in');
     } else{
         jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, (err,info)=>{
