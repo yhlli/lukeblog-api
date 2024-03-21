@@ -189,6 +189,7 @@ app.get('/post/:id', async(req,res)=>{
 
 app.delete('/post/:id', async(req,res)=>{
     const {id} = req.params;
+    await Comment.deleteMany({ postId: id });
     await Post.deleteOne(Post.findById(id));
     res.json('ok');
 })
