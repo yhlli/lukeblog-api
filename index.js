@@ -160,11 +160,17 @@ app.put('/post', uploadMiddleware.single('file'), async (req,res) => {
 });
 
 app.get('/post', async (req,res)=>{
+    const Posts = await Post.find()
+    .populate('author', ['username'])
+    .sort({createdAt: -1})
+    .limit(20);
+
+    Posts.forEach(function(postItem){
+        var co = postItem.cover;
+        if (!fs.existsSync(co)) postItem.cover = 'uploads\\default.jpg';
+    })
     res.json(
-        await Post.find()
-            .populate('author', ['username'])
-            .sort({createdAt: -1})
-            .limit(20)
+        Posts
     );
 });
 
