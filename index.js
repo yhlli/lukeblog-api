@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const User = require('./models/User');
 const Post = require('./models/Post');
 const Comment = require('./models/Comment');
+const Bio = require('./models/Bio');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
@@ -211,19 +212,40 @@ app.get('/comment/:id', async(req,res)=>{
     const {id} = req.params;
     const commentDoc = await Comment.find({postId: id}).populate('author', ['username']);
     res.json(commentDoc);
-})
+});
 
 app.delete('/comment/:id', async(req,res)=>{
     const {id} = req.params;
     await Comment.deleteOne(Comment.findById(id));
     res.json('ok');
-})
+});
+
+app.get('/user/:id', async (req,res)=>{
+    const {id} = req.params;
+    const bioDoc = await Bio.find({ postId: id });
+    res.json(bioDoc);
+});
+
+app.post('/user/editbio/:id', uploadMiddleware.single('file'), async (req,res)=>{
+    const {id} = req.params;
+    const {token} = req.cookies;
+    
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, async (err,info)=>{
+        if(err) throw err;
+        const { content } = req.body;
+        await Bio.deleteMany({ postId: id });
+        const bioDoc = await Bio.create({
+            postId: id,
+            content: content,
+            author: info.id,
+        })
+        res.json(bioDoc);
+    });
+});
+
 
 app.listen(4000);
 
-app.get('/user/:id', (req,res)=>{
-    const {id} = req.params;
-    res.json(req.params);
-})
+
 
 //Below may not work yet and is not integrated well
