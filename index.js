@@ -130,6 +130,7 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
                 content,
                 cover:newPath,
                 author:info.id,
+                uname:info.username,
             });
         res.json(postDoc);
         //res.json({files:req.file})
@@ -243,6 +244,13 @@ app.post('/user/editbio/:id', uploadMiddleware.single('file'), async (req,res)=>
     });
 });
 
+app.get('/user/post/:id', async (req,res)=>{
+    const {id} = req.params;
+    const userPosts = await Post.find({ uname: id })
+
+    console.log(userPosts.title);
+    res.json(userPosts);
+});
 
 app.listen(4000);
 
