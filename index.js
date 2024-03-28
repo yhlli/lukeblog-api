@@ -16,6 +16,34 @@ const uploadMiddleware = multer({ dest: 'uploads/' });
 const fs = require('fs');
 const corsOptions = require('./corsOptions');
 
+const authenticate = async (req, res, next) => {
+    const accessToken = req.cookies['authorization'];
+    const refreshToken = req.cookies['refreshToken'];
+    try {
+        if (!accessToken && !refreshToken) {
+            return res.status(401).send('Access Denied. No token provided.');
+        }
+        const info = await jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, {});
+        req.infoId = info.id;
+        req.infoUsername = info.username;
+    } catch (err) {
+        if (!refreshToken){
+            return res.status(401).sent('Access Denied. No refresh token provided.');
+        }
+        try {
+            const refreshInfo = await jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET,{});
+            req.infoId = refreshInfo.id;
+            req.infoUsername = refreshInfo.username;
+            const accessToken = jwt.sign( {refreshInfo,id: refreshInfo._id}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+            res.cookie('refreshToken', refreshToken, { httpOnly: true, sameSite: 'strict' });
+            res.cookie('authorization', accessToken);
+        } catch (err) {
+            return res.status(400).send('Invalid Refresh Token.')
+        }
+    }
+    next();
+};
+
 //http://localhost:3000
 //https://lukeblog.onrender.com
 //app.use(cors({credentials:true,origin:'https://lukeblog.onrender.com'}));
@@ -46,8 +74,6 @@ app.post('/register', async (req,res)=>{
     }
 })
 
-
-
 app.post('/login', async (req,res)=>{
     const {username,password} = req.body;
     const userDoc = await User.findOne({username});
@@ -56,52 +82,39 @@ app.post('/login', async (req,res)=>{
         passOk = bcrypt.compareSync(password, userDoc.password);
     }
     if (passOk){
-        //Logged in
-        /* jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {}, (err,token) => {
-            if (err) throw err;
-            res.cookie('token', token).json({
-              id:userDoc._id,
-              username,
-            });
-          }); */
-        const accessToken = jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, {});
+        const accessToken = jwt.sign({username,id:userDoc._id}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+        const refreshToken = jwt.sign({username,id:userDoc._id}, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
         try {
-            res.cookie('token', accessToken, {
-                httpOnly: false,
-                secure: true,
-                sameSite: 'none',
-            }).json({
+            res
+                .cookie('refreshToken', refreshToken, { httpOnly: true, sameSite: 'strict' })
+                .cookie('authorization', accessToken)
+                .json({
                 id:userDoc._id,
                 username,
             });
         } catch (error) {
             throw error;
         }
-        /* res.json(username); */
     } else{
         res.status(400).json('Wrong credentials');
     }
 });
 
-app.get('/profile', (req,res)=>{
-    const {token} = req.cookies;
-    if (token === ''){
+app.get('/profile', authenticate, (req,res)=>{
+    const {authorization} = req.cookies;
+    if (authorization === ''){
         res.json('not logged in');
     } else{
-        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, (err,info)=>{
-            if(err) throw err;
-            res.json(info);
-        });
+        res.json(req.infoId);
     }
     
 });
 
 app.post('/logout', (req,res)=>{
-    res.cookie('token', '').json('ok');
+    res.cookie('authorization', '').json('ok');
 });
 
-app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
-    //const {originalname,path} = req.file;
+app.post('/post', uploadMiddleware.single('file'), authenticate, async (req,res) => {
     var path;
     var originalname;
     var parts;
@@ -115,29 +128,22 @@ app.post('/post', uploadMiddleware.single('file'), async (req,res) => {
         path = 'uploads\\default';
         ext = 'jpg';
     }
-    //const parts = originalname.split('.');
-    //const ext = parts[parts.length - 1];
     const newPath = path+'.'+ext;
     if (req.file !== undefined) fs.renameSync(path, newPath);
 
-    const {token} = req.cookies;
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, async (err,info)=>{
-        if(err) throw err;
-            const {title,summary,content} = req.body;
-            const postDoc = await Post.create({
-                title,
-                summary,
-                content,
-                cover:newPath,
-                author:info.id,
-                uname:info.username,
-            });
-        res.json(postDoc);
-        //res.json({files:req.file})
-    });
+        const {title,summary,content} = req.body;
+        const postDoc = await Post.create({
+            title,
+            summary,
+            content,
+            cover:newPath,
+            author:req.infoId,
+            uname:req.infoUsername,
+        });
+    res.json(postDoc);
 });
 
-app.put('/post', uploadMiddleware.single('file'), async (req,res) => {
+app.put('/post', uploadMiddleware.single('file'), authenticate, async (req,res) => {
     let newPath = null;
     if (req.file) {
         const {originalname,path} = req.file;
@@ -146,23 +152,19 @@ app.put('/post', uploadMiddleware.single('file'), async (req,res) => {
         newPath = path+'.'+ext;
         fs.renameSync(path, newPath);
     }
-    const {token} = req.cookies;
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, async (err,info)=>{
-        if(err) throw err;
-        const {id,title,summary,content} = req.body;
-        const postDoc = await Post.findById(id);
-        const isAuthor = JSON.stringify(postDoc.author) === JSON.stringify(info.id);
-        if (!isAuthor){
-            return res.status(400).json('You are not the author');
-        }
-        await postDoc.updateOne({
-            title,
-            summary,
-            content,
-            cover: newPath ? newPath: postDoc.cover,
-        });
-        res.json(postDoc);
+    const {id,title,summary,content} = req.body;
+    const postDoc = await Post.findById(id);
+    const isAuthor = JSON.stringify(postDoc.author) === JSON.stringify(req.infoId);
+    if (!isAuthor){
+        return res.status(400).json('You are not the author');
+    }
+    await postDoc.updateOne({
+        title,
+        summary,
+        content,
+        cover: newPath ? newPath: postDoc.cover,
     });
+    res.json(postDoc);
 });
 
 app.get('/post', async (req,res)=>{
@@ -194,20 +196,17 @@ app.delete('/post/:id', async(req,res)=>{
     res.json('ok');
 })
 
-app.post('/comment/:id', uploadMiddleware.single('file'), async(req,res)=>{
+app.post('/comment/:id', uploadMiddleware.single('file'), authenticate, async(req,res)=>{
     const {id} = req.params;
     const {comment} = req.body;
-    const {token} = req.cookies;
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, async (err,info)=>{
-        if(err) throw err;
-        const commentDoc = await Comment.create({
-            postId: id,
-            content: comment,
-            author: info.id,
-        })
-        res.json(commentDoc);
-    });
+    const commentDoc = await Comment.create({
+        postId: id,
+        content: comment,
+        author: req.infoId,
+    })
+    res.json(commentDoc);
 });
+
 
 app.get('/comment/:id', async(req,res)=>{
     const {id} = req.params;
@@ -229,26 +228,19 @@ app.get('/user/:id', async (req,res)=>{
 
 app.post('/user/editbio/:id', uploadMiddleware.single('file'), async (req,res)=>{
     const {id} = req.params;
-    const {token} = req.cookies;
-    
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, {}, async (err,info)=>{
-        if(err) throw err;
-        const { content } = req.body;
-        await Bio.deleteMany({ postId: id });
-        const bioDoc = await Bio.create({
-            postId: id,
-            content: content,
-            author: info.id,
-        })
-        res.json(bioDoc);
-    });
+    const { content } = req.body;
+    await Bio.deleteMany({ postId: id });
+    const bioDoc = await Bio.create({
+        postId: id,
+        content: content,
+        author: req.infoId,
+    })
+    res.json(bioDoc);
 });
 
 app.get('/user/post/:id', async (req,res)=>{
     const {id} = req.params;
     const userPosts = await Post.find({ uname: id })
-
-    console.log(userPosts.title);
     res.json(userPosts);
 });
 
