@@ -101,13 +101,7 @@ app.post('/login', async (req,res)=>{
 });
 
 app.get('/profile', authenticate, (req,res)=>{
-    const {authorization} = req.cookies;
-    if (authorization === ''){
-        res.json('not logged in');
-    } else{
-        res.json(req.infoId);
-    }
-    
+    res.json(req.infoId);
 });
 
 app.post('/logout', (req,res)=>{
