@@ -168,17 +168,22 @@ app.put('/post', uploadMiddleware.single('file'), authenticate, async (req,res) 
 });
 
 app.get('/post', async (req,res)=>{
+    const page = parseInt(req.query.page);
+    const offset = 20;
     const Posts = await Post.find()
     .populate('author', ['username'])
     .sort({createdAt: -1})
-    .limit(20);
+    .limit(offset)
+    .skip((page-1)*offset);
 
     Posts.forEach(function(postItem){
         var co = postItem.cover;
         if (!fs.existsSync(co)) postItem.cover = 'uploads\\default.jpg';
     })
-    res.json(
-        Posts
+    res.json({
+        data: Posts,
+        totalCount: await Post.countDocuments(),
+    }
     );
 });
 
