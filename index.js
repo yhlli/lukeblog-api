@@ -35,7 +35,7 @@ const authenticate = async (req, res, next) => {
             req.infoId = refreshInfo.id;
             req.infoUsername = refreshInfo.username;
             const accessToken = jwt.sign( {refreshInfo,id: refreshInfo._id}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-            res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'lax' });
+            res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'none' });
             res.cookie('authorization', accessToken);
         } catch (err) {
             return res.status(400).send('Invalid Refresh Token.')
@@ -86,8 +86,8 @@ app.post('/login', async (req,res)=>{
         const refreshToken = jwt.sign({username,id:userDoc._id}, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
         try {
             res
-                .cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'lax' })
-                .cookie('authorization', accessToken)
+                .cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'none' })
+                .cookie('authorization', accessToken, { httpOnly: false, secure: false, sameSite: 'none' })
                 .json({
                 id:userDoc._id,
                 username,
