@@ -87,7 +87,7 @@ app.post('/login', async (req,res)=>{
         try {
             res
                 .cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'none' })
-                .cookie('authorization', accessToken, { httpOnly: false, secure: false, sameSite: 'none' })
+                .cookie('authorization', accessToken, { httpOnly: false, secure: true, sameSite: 'none' })
                 .json({
                 id:userDoc._id,
                 username,
