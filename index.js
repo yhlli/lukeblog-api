@@ -246,6 +246,10 @@ app.post('/user/editbio/:id', uploadMiddleware.single('file'), async (req,res)=>
 app.get('/user/post/:id', async (req,res)=>{
     const {id} = req.params;
     const userPosts = await Post.find({ uname: id })
+    userPosts.forEach(function(postItem){
+        var co = postItem.cover;
+        if (!fs.existsSync(co)) postItem.cover = 'uploads\\default.jpg';
+    })
     res.json(userPosts);
 });
 
