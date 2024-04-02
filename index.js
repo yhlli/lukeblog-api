@@ -111,8 +111,9 @@ app.get('/profile', authenticate, (req,res)=>{
 });
 
 app.post('/logout', (req,res)=>{
-    res.cookie('authorization', '').json('ok');
-    res.cookie('refreshToken', '').json('ok');
+    res.cookie('authorization', '', { expires: new Date(0) });
+    res.cookie('refreshToken', '', { expires: new Date(0) });
+    res.status(200).json('ok');
 });
 
 app.post('/post', uploadMiddleware.single('file'), authenticate, async (req,res) => {
