@@ -112,6 +112,7 @@ app.get('/profile', authenticate, (req,res)=>{
 
 app.post('/logout', (req,res)=>{
     res.cookie('authorization', '').json('ok');
+    res.cookie('refreshToken', '').json('ok');
 });
 
 app.post('/post', uploadMiddleware.single('file'), authenticate, async (req,res) => {
