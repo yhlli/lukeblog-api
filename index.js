@@ -105,9 +105,9 @@ app.get('/profile', authenticate, (req,res)=>{
     if (authorization === ''){
         res.json(null);
     } else{
-        res.json(req.infoId);
+        const info = { username: req.infoUsername, id: req.infoId };
+        res.json(info);
     }
-    
 });
 
 app.post('/logout', (req,res)=>{
