@@ -214,7 +214,6 @@ app.post('/comment/:id', uploadMiddleware.single('file'), authenticate, async(re
     res.json(commentDoc);
 });
 
-
 app.get('/comment/:id', async(req,res)=>{
     const {id} = req.params;
     const commentDoc = await Comment.find({postId: id}).populate('author', ['username']);
@@ -246,17 +245,22 @@ app.post('/user/editbio/:id', uploadMiddleware.single('file'), async (req,res)=>
 });
 
 app.get('/user/post/:id', async (req,res)=>{
+    const page = parseInt(req.query.page);
+    const offset = 20;
     const {id} = req.params;
     const userPosts = await Post.find({ uname: id })
+    .sort({createdAt: -1})
+    .limit(offset)
+    .skip((page-1)*offset);
     userPosts.forEach(function(postItem){
         var co = postItem.cover;
         if (!fs.existsSync(co)) postItem.cover = 'uploads\\default.jpg';
     })
-    res.json(userPosts);
+    res.json({
+        data: userPosts,
+        totalCount: await Post.countDocuments(),
+    }
+    );
 });
 
 app.listen(4000);
-
-
-
-//Below may not work yet and is not integrated well
