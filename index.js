@@ -141,6 +141,7 @@ app.post('/post', uploadMiddleware.single('file'), authenticate, async (req,res)
             cover:newPath,
             author:req.infoId,
             uname:req.infoUsername,
+            views:0,
         });
     res.json(postDoc);
 });
@@ -171,10 +172,17 @@ app.put('/post', uploadMiddleware.single('file'), authenticate, async (req,res) 
 
 app.get('/post', async (req,res)=>{
     const page = parseInt(req.query.page);
+    const sortBy = parseInt(req.query.sort);
+    const sortCriteria = {
+        1: { createdAt: -1 },
+        2: { createdAt: 1 },
+        3: { views: -1, createdAt: -1 },
+        4: { views: 1, createdAt: -1 },
+    };
     const offset = 20;
     const Posts = await Post.find()
     .populate('author', ['username'])
-    .sort({createdAt: -1})
+    .sort(sortCriteria[sortBy])
     .limit(offset)
     .skip((page-1)*offset);
 
@@ -192,6 +200,10 @@ app.get('/post', async (req,res)=>{
 app.get('/post/:id', async(req,res)=>{
     const {id} = req.params;
     const postDoc = await Post.findById(id).populate('author', ['username']);
+    const viewCount = postDoc.views;
+    await postDoc.updateOne({
+        views: viewCount + 1,
+    });
     if (!fs.existsSync(postDoc.cover)) postDoc.cover = 'uploads\\default.jpg';
     res.json(postDoc);
 });

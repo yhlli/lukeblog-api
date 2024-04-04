@@ -8,6 +8,7 @@ const PostSchema = new Schema({
     cover:String,
     author:{type:Schema.Types.ObjectId, ref:'User'},
     uname:String,
+    views:Number,
 }, {
     timestamps: true,
 });
