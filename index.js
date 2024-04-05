@@ -260,8 +260,15 @@ app.get('/user/post/:id', async (req,res)=>{
     const page = parseInt(req.query.page);
     const offset = 20;
     const {id} = req.params;
+    const sortBy = parseInt(req.query.sort);
+    const sortCriteria = {
+        1: { createdAt: -1 },
+        2: { createdAt: 1 },
+        3: { views: -1, createdAt: -1 },
+        4: { views: 1, createdAt: -1 },
+    };
     const userPosts = await Post.find({ uname: id })
-    .sort({createdAt: -1})
+    .sort(sortCriteria[sortBy])
     .limit(offset)
     .skip((page-1)*offset);
     userPosts.forEach(function(postItem){
