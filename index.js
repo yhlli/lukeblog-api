@@ -205,7 +205,16 @@ app.get('/post/:id', async(req,res)=>{
         views: viewCount + 1,
     });
     if (!fs.existsSync(postDoc.cover)) postDoc.cover = 'uploads\\default.jpg';
-    res.json(postDoc);
+    const userId = req.query.user;
+    let favPosts = [];
+    if (userId){
+        const user = await User.findById(userId).populate('favoritePosts');
+        favPosts = Array.isArray(user.favoritePosts) ? user.favoritePosts : [];
+    }
+    res.json({
+        data: postDoc,
+        favPosts: favPosts,
+    });
 });
 
 app.delete('/post/:id', async(req,res)=>{
@@ -261,25 +270,64 @@ app.get('/user/post/:id', async (req,res)=>{
     const offset = 20;
     const {id} = req.params;
     const sortBy = parseInt(req.query.sort);
+    const fav = req.query.fav === 'true';
     const sortCriteria = {
         1: { createdAt: -1 },
         2: { createdAt: 1 },
         3: { views: -1, createdAt: -1 },
         4: { views: 1, createdAt: -1 },
     };
-    const userPosts = await Post.find({ uname: id })
-    .sort(sortCriteria[sortBy])
-    .limit(offset)
-    .skip((page-1)*offset);
-    userPosts.forEach(function(postItem){
-        var co = postItem.cover;
-        if (!fs.existsSync(co)) postItem.cover = 'uploads\\default.jpg';
-    })
-    res.json({
-        data: userPosts,
-        totalCount: await Post.countDocuments(),
+    if (fav){
+        const [user] = await User.find({ username: id}).populate('favoritePosts');
+        const favPostIds = user.favoritePosts?.map(post => post._id);
+        const favPosts = await Post.find({ _id: { $in: favPostIds }})
+        .populate('author', ['username'])
+        .sort(sortCriteria[sortBy])
+        .limit(offset)
+        .skip((page-1)*offset);
+        favPosts.forEach(function(postItem){
+            var co = postItem.cover;
+            if (!fs.existsSync(co)) postItem.cover = 'uploads\\default.jpg';
+        })
+        res.json({
+            data: favPosts,
+            totalCount: await Post.countDocuments(),
+        }
+        );
+    }else{
+        const userPosts = await Post.find({ uname: id })
+        .populate('author', ['username'])
+        .sort(sortCriteria[sortBy])
+        .limit(offset)
+        .skip((page-1)*offset);
+        userPosts.forEach(function(postItem){
+            var co = postItem.cover;
+            if (!fs.existsSync(co)) postItem.cover = 'uploads\\default.jpg';
+        })
+        res.json({
+            data: userPosts,
+            totalCount: await Post.countDocuments(),
+        }
+        );
     }
-    );
+});
+
+app.post('/post/favorite/:id', async (req,res)=>{
+    const userId = req.query.user;
+    const {id} = req.params;
+    const user = await User.findById(userId);
+    user.favoritePosts.push(id);
+    await user.save();
+    res.json('ok');
+});
+
+app.delete('/post/favorite/:id', async (req,res)=>{
+    const userId = req.query.user;
+    const {id} = req.params;
+    const user = await User.findById(userId);
+    user.favoritePosts.pull(id);
+    await user.save();
+    res.json('ok');
 });
 
 app.listen(4000);
