@@ -332,7 +332,7 @@ app.delete('/post/favorite/:id', async (req,res)=>{
 });
 
 app.get('/location-from-ip', (req, res) => {
-    const ip = req.query.ip || req.ip; // Allow optional IP parameter or use user's IP
+    const ip = req.ip; // Allow optional IP parameter or use user's IP
   
     const options = {
       path: `/json/`,
