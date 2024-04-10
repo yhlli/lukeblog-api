@@ -15,6 +15,7 @@ const multer = require('multer');
 const uploadMiddleware = multer({ dest: 'uploads/' });
 const fs = require('fs');
 const corsOptions = require('./corsOptions');
+const https = require('https');
 
 const authenticate = async (req, res, next) => {
     const accessToken = req.cookies['authorization'];
@@ -329,5 +330,61 @@ app.delete('/post/favorite/:id', async (req,res)=>{
     await user.save();
     res.json('ok');
 });
+
+app.get('/location-from-ip', (req, res) => {
+    const ip = req.query.ip || req.ip; // Allow optional IP parameter or use user's IP
+  
+    const options = {
+      path: `/json/`,
+      host: 'ipapi.co',
+      port: 443,
+      headers: { 'User-Agent': 'nodejs-ipapi-v1.02' }
+    };
+  
+    https.get(options, function(resp) {
+      var body = '';
+      resp.on('data', function(data) {
+        body += data;
+      });
+      resp.on('end', function() {
+        var loc = JSON.parse(body);
+        res.json(loc);
+      });
+    });
+});
+
+const apiKey = '6655f7278841063bec5ea609d28dd7c9';
+
+app.get('/weather', async (req, res) => {
+    const { lat, lon } = req.query;
+  
+    if (!lat || !lon) {
+      return res.status(400).json({ error: 'Missing latitude or longitude parameters' });
+    }
+  
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=imperial`;
+  
+    https.get(url, (response) => {
+      let weatherData = '';
+      response.on('data', (chunk) => {
+        weatherData += chunk;
+      });
+  
+      response.on('end', () => {
+        try {
+          const parsedData = JSON.parse(weatherData);
+          res.json(parsedData); // Send the parsed weather data
+        } catch (error) {
+          console.error(error);
+          res.status(500).json({ error: 'Failed to parse weather data' });
+        }
+      });
+  
+      response.on('error', (error) => {
+        console.error(error);
+        res.status(500).json({ error: 'Failed to fetch weather data' });
+      });
+    });
+  });
 
 app.listen(4000);
