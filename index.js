@@ -331,28 +331,6 @@ app.delete('/post/favorite/:id', async (req,res)=>{
     res.json('ok');
 });
 
-app.get('/location-from-ip', (req, res) => {
-    const ip = req.query.ip || req.ip; // Allow optional IP parameter or use user's IP
-  
-    const options = {
-      path: `/json/`,
-      host: 'ipapi.co',
-      port: 443,
-      headers: { 'User-Agent': 'nodejs-ipapi-v1.02' }
-    };
-  
-    https.get(options, function(resp) {
-      var body = '';
-      resp.on('data', function(data) {
-        body += data;
-      });
-      resp.on('end', function() {
-        var loc = JSON.parse(body);
-        res.json(loc);
-      });
-    });
-});
-
 const apiKey = '6655f7278841063bec5ea609d28dd7c9';
 
 app.get('/weather', async (req, res) => {
