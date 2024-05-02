@@ -133,7 +133,6 @@ app.post('/post', uploadMiddleware.single('file'), authenticate, async (req,res)
     }
     const newPath = path+'.'+ext;
     if (req.file !== undefined) fs.renameSync(path, newPath);
-
         const {title,summary,content} = req.body;
         const postDoc = await Post.create({
             title,
@@ -210,7 +209,7 @@ app.get('/post/:id', async(req,res)=>{
     let favPosts = [];
     if (userId){
         const user = await User.findById(userId).populate('favoritePosts');
-        favPosts = Array.isArray(user.favoritePosts) ? user.favoritePosts : [];
+        favPosts = user.favoritePosts;
     }
     res.json({
         data: postDoc,
@@ -363,6 +362,20 @@ app.get('/weather', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch weather data' });
       });
     });
-  });
+});
+
+app.get('/user/:id/highscore', authenticate, async(req,res)=>{
+    const {id} = req.params;
+    const user = await User.findOne({username: id});
+    res.json(user.highscore);
+});
+
+app.post('/user/:id/highscore', authenticate, async(req,res)=>{
+    const {id} = req.params;
+    const money = parseInt(req.query.money);
+    const user = await User.findOne({username: id});
+    await user.updateOne({$set: {highscore:money}});
+    res.json('ok');
+})
 
 app.listen(4000);

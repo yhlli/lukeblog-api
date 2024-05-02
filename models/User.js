@@ -9,7 +9,8 @@ const UserSchema = Schema({
         type: [mongoose.Schema.Types.ObjectId],
         ref: Post,
         default: [],
-    }
+    },
+    highscore: {type: Number, required: false, default: 1500,},
 });
 
 const UserModel = model('User', UserSchema);
