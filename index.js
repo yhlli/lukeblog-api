@@ -12,7 +12,14 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const salt = bcrypt.genSaltSync(10);
 const multer = require('multer');
-const uploadMiddleware = multer({ dest: 'uploads/' });
+//const uploadMiddleware = multer({ dest: 'uploads/' });
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+});
+const uploadMiddleware = multer({ storage });
 const fs = require('fs');
 const corsOptions = require('./corsOptions');
 const https = require('https');
