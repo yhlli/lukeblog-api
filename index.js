@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
         cb(null, 'uploads/');
     },
 });
-const uploadMiddleware = multer({ storage });
+const uploadMiddleware = multer({ storage: storage });
 const fs = require('fs');
 const corsOptions = require('./corsOptions');
 const https = require('https');
