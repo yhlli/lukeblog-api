@@ -383,6 +383,15 @@ app.post('/user/:id/highscore', authenticate, async(req,res)=>{
     const user = await User.findOne({username: id});
     await user.updateOne({$set: {highscore:money}});
     res.json('ok');
-})
+});
+
+app.delete('/user/:id/delete', authenticate, async(req,res)=>{
+    const {id} = req.params;
+    const userid = await User.findOne({ username:id });
+    await Comment.deleteMany({ author:userid._id });
+    await Post.deleteMany({ author:userid._id });
+    await User.deleteOne({ _id:userid._id });
+    res.json('ok');
+});
 
 app.listen(4000);
