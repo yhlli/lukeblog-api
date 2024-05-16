@@ -391,6 +391,7 @@ app.delete('/user/:id/delete', authenticate, async(req,res)=>{
     await Comment.deleteMany({ author:userid._id });
     await Post.deleteMany({ author:userid._id });
     await User.deleteOne({ _id:userid._id });
+    await Bio.deleteOne({ postId:userid });
     res.json('ok');
 });
 
