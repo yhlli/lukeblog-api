@@ -7,6 +7,7 @@ const User = require('./models/User');
 const Post = require('./models/Post');
 const Comment = require('./models/Comment');
 const Bio = require('./models/Bio');
+const GroceryList = require('./models/GroceryList');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
@@ -75,7 +76,12 @@ app.post('/register', async (req,res)=>{
             username,
             password:bcrypt.hashSync(password,salt)
         });
-        res.json(userDoc);
+        const grocery = await GroceryList.create({
+            author: userDoc._id,
+            name: '',
+            quantity: '',
+        })
+        res.json({userDoc,grocery});
     } catch (e) {
         console.log(e);
         res.status(400).json(e);
@@ -392,6 +398,13 @@ app.delete('/user/:id/delete', authenticate, async(req,res)=>{
     await Post.deleteMany({ author:userid._id });
     await User.deleteOne({ _id:userid._id });
     await Bio.deleteOne({ postId:userid });
+    await GroceryList.deleteOne({ author:userid._id });
+    res.json('ok');
+});
+
+app.get('/:id/grocerylist', authenticate, async(req,res)=>{
+    
+    console.log('hi');
     res.json('ok');
 });
 
