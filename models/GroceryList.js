@@ -13,7 +13,7 @@ const GroceryListSchema = new Schema({
             default: 1,
         },
     }],
-});
+}, {versionKey:false});
 
 const GroceryListModel = model('GroceryList', GroceryListSchema);
 module.exports = GroceryListModel;

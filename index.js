@@ -403,11 +403,37 @@ app.delete('/user/:id/delete', authenticate, async(req,res)=>{
 });
 
 app.get('/:id/grocerylist', authenticate, async(req,res)=>{
+    const {id} = req.params;
+    const groceries = await GroceryList.findOne({ author:id }).populate("items");
+    if (groceries === null){
+        await GroceryList.create({
+            author: req.infoId,
+            name: '',
+            quantity: '',
+        })
+        res.json("ok");
+    }else{
+        res.json(groceries.items);
+    }
     
-    console.log('hi');
-    res.json('ok');
 });
 
-//test push
+app.post('/:id/grocerylist', uploadMiddleware.single('file'), authenticate, async(req,res)=>{
+    const {id} = req.params;
+    const { groceryItem, groceryQuantity } = req.body;
+    const gList = await GroceryList.findOne({ author:id });
+    await gList.items.push({ name: groceryItem, quantity: groceryQuantity });
+    await gList.save();
+    res.json({ name: groceryItem, quantity: groceryQuantity});
+});
+
+app.delete('/:id/grocerylist', authenticate, async(req,res)=>{
+    const {id} = req.params;
+    const {item} = req.query;
+    const gList = await GroceryList.findOne({author:id}).populate("items");
+    await gList.items.pull(item);
+    await gList.save();
+    res.json('ok');
+});
 
 app.listen(4000);
