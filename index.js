@@ -415,14 +415,18 @@ app.get('/:id/grocerylist', authenticate, async(req,res)=>{
     }else{
         res.json(groceries.items);
     }
-    
 });
 
 app.post('/:id/grocerylist', uploadMiddleware.single('file'), authenticate, async(req,res)=>{
     const {id} = req.params;
     const { groceryItem, groceryQuantity } = req.body;
     const gList = await GroceryList.findOne({ author:id });
-    await gList.items.push({ name: groceryItem, quantity: groceryQuantity });
+    const existsItem = gList.items.find(item => item.name === groceryItem);
+    if (existsItem){
+        existsItem.quantity = existsItem.quantity + Number(groceryQuantity);
+    } else{
+        await gList.items.push({ name: groceryItem, quantity: groceryQuantity });
+    }
     await gList.save();
     res.json({ name: groceryItem, quantity: groceryQuantity});
 });
@@ -432,6 +436,26 @@ app.delete('/:id/grocerylist', authenticate, async(req,res)=>{
     const {item} = req.query;
     const gList = await GroceryList.findOne({author:id}).populate("items");
     await gList.items.pull(item);
+    await gList.save();
+    res.json('ok');
+});
+
+app.put('/:id/grocerylist', authenticate, async(req,res)=>{
+    const {id} = req.params;
+    const groceryCopy = req.body;
+    await GroceryList.findOneAndUpdate({author:id}, {items:groceryCopy});
+    res.json('ok');
+});
+
+app.put('/:id/grocerylistquantity', authenticate, async(req,res)=>{
+    const {id} = req.params;
+    const {num, name} = req.query;
+    const gList = await GroceryList.findOne({author:id});
+    const index = gList.items.findIndex(item => item.name === name);
+    if (index === -1) {
+        return res.status(404).json({ message: 'Item not found in the list' });
+    }
+    gList.items[index].quantity += Number(num);
     await gList.save();
     res.json('ok');
 });
