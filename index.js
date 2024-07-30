@@ -13,14 +13,14 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const salt = bcrypt.genSaltSync(10);
 const multer = require('multer');
-//const uploadMiddleware = multer({ dest: 'uploads/' });
+const uploadMiddleware = multer({ dest: 'uploads/' });
 
-const storage = multer.diskStorage({
+/* const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
     },
 });
-const uploadMiddleware = multer({ storage: storage });
+const uploadMiddleware = multer({ storage: storage }); */
 const fs = require('fs');
 const corsOptions = require('./corsOptions');
 const https = require('https');
@@ -375,6 +375,21 @@ app.get('/weather', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch weather data' });
       });
     });
+});
+
+app.get('/user/:id/money', authenticate, async (req, res) => {
+    const {id} = req.params;
+    const user = await User.findOne({username: id});
+    const cash = user.money;
+    res.json(cash);
+});
+
+app.post('/user/:id/money', authenticate, async(req,res)=>{
+    const {id} = req.params;
+    const money = parseInt(req.query.money);
+    const user = await User.findOne({username: id});
+    await user.updateOne({$set: {money:money}})
+    res.json('ok');
 });
 
 app.get('/user/:id/highscore', authenticate, async(req,res)=>{

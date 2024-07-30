@@ -12,6 +12,10 @@ const GroceryListSchema = new Schema({
             type: Number,
             default: 1,
         },
+        checked: {
+            type: Boolean,
+            default: false,
+        },
     }],
 }, {versionKey:false});
 

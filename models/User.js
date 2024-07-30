@@ -11,6 +11,7 @@ const UserSchema = Schema({
         default: [],
     },
     highscore: {type: Number, required: false, default: 1500,},
+    money: {type: Number, required: false, default: 1500,},
 });
 
 const UserModel = model('User', UserSchema);
