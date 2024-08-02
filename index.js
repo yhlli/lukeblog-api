@@ -44,7 +44,11 @@ const authenticate = async (req, res, next) => {
             req.infoId = refreshInfo.id;
             req.infoUsername = refreshInfo.username;
             const accessToken = jwt.sign( {refreshInfo,id: refreshInfo._id}, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-            res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: true, sameSite: 'none' });
+            res.cookie('refreshToken', refreshToken, { 
+                //httpOnly: true, 
+                secure: true, 
+                sameSite: 'none' 
+            });
             res.cookie('authorization', accessToken);
         } catch (err) {
             return res.status(400).send('Invalid Refresh Token.')
@@ -53,11 +57,7 @@ const authenticate = async (req, res, next) => {
     next();
 };
 
-//http://localhost:3000
-//https://lukeblog.onrender.com
-//app.use(cors({credentials:true,origin:'https://lukeblog.onrender.com'}));
 app.use(cors(corsOptions));
-
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(__dirname + '/uploads'));
